@@ -32,13 +32,16 @@ header span { opacity:0.85; }
     <input id="username" placeholder="you">
   </div>
 </header>
+
 <div id="chat"></div>
+
 <form id="form">
   <input id="message" autocomplete="off" placeholder="Type a message...">
   <button id="send" type="submit">Send</button>
-  <button type="button" id="clear">Clear Chat</button>
+  <button type="button" id="clear">Clear Chat (local)</button>
 </form>
 
+<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script>
@@ -61,8 +64,10 @@ header span { opacity:0.85; }
   const msgInput = document.getElementById("message");
   const userInput = document.getElementById("username");
   const clearBtn = document.getElementById("clear");
-  const TEACHER_PASSWORD = "teacher123";
 
+  let messages = []; // local cache
+
+  // Render a message
   function addMessage(msg, isMe){
     const wrap = document.createElement("div");
     wrap.className = "msg" + (isMe ? " me" : "");
@@ -72,12 +77,14 @@ header span { opacity:0.85; }
     chatEl.scrollTop = chatEl.scrollHeight;
   }
 
-  // Listen to messages live
+  // Listen live
   db.collection("messages").orderBy("time")
     .onSnapshot(snapshot=>{
+      messages = []; 
       chatEl.innerHTML = "";
       snapshot.forEach(doc=>{
         const m = doc.data();
+        messages.push(m);
         addMessage(m, m.name === (userInput.value.trim()||"anon"));
       });
     });
@@ -87,21 +94,14 @@ header span { opacity:0.85; }
     e.preventDefault();
     const text = msgInput.value.trim();
     if(!text) return;
-    db.collection("messages").add({
-      name: userInput.value.trim()||"anon",
-      text,
-      time: Date.now()
-    });
+    const msg = {name: userInput.value.trim()||"anon", text, time: Date.now()};
+    db.collection("messages").add(msg);
     msgInput.value = "";
   });
 
-  // Clear chat button
+  // Local clear chat button
   clearBtn.addEventListener("click", ()=>{
-    const pass = prompt("Teacher password:");
-    if(pass !== TEACHER_PASSWORD) return alert("Wrong password");
-    db.collection("messages").get().then(snap=>{
-      snap.forEach(doc => doc.ref.delete());
-    }).then(()=> alert("Chat cleared!"));
+    chatEl.innerHTML = "";
   });
 </script>
 </body>
