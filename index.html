@@ -18,8 +18,10 @@ header span { opacity:0.85; }
 .text { font-size:1rem; }
 #form { display:flex; padding:10px 16px; background:#4b3b77; gap:8px; }
 #message { flex:1; padding:10px; border-radius:4px; border:1px solid #6658a8; background:#2b2244; color:#e0d9ff; font-size:1rem; }
-#send { padding:10px 16px; border:none; border-radius:4px; background:#7fa1ff; color:#111b33; font-weight:bold; font-size:1rem; cursor:pointer; }
+#send, #clear { padding:10px 16px; border:none; border-radius:4px; font-weight:bold; font-size:1rem; cursor:pointer; }
+#send { background:#7fa1ff; color:#111b33; }
 #send:disabled { opacity:0.5; cursor:default; }
+#clear { background:#b49fff; color:#111b33; margin-left:8px; }
 </style>
 </head>
 <body>
@@ -34,9 +36,9 @@ header span { opacity:0.85; }
 <form id="form">
   <input id="message" autocomplete="off" placeholder="Type a message...">
   <button id="send" type="submit">Send</button>
+  <button type="button" id="clear">Clear Chat</button>
 </form>
 
-<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script>
@@ -58,64 +60,48 @@ header span { opacity:0.85; }
   const formEl = document.getElementById("form");
   const msgInput = document.getElementById("message");
   const userInput = document.getElementById("username");
+  const clearBtn = document.getElementById("clear");
   const TEACHER_PASSWORD = "teacher123";
-  let state = {locked:false, muted:false};
 
   function addMessage(msg, isMe){
     const wrap = document.createElement("div");
     wrap.className = "msg" + (isMe ? " me" : "");
-    const meta = document.createElement("div");
-    meta.className = "meta";
-    meta.textContent = msg.name + " • " + new Date(msg.time).toLocaleTimeString();
-    const text = document.createElement("div");
-    text.className = "text";
-    text.textContent = msg.text;
-    wrap.appendChild(meta);
-    wrap.appendChild(text);
+    wrap.innerHTML = `<div class="meta">${msg.name} • ${new Date(msg.time).toLocaleTimeString()}</div>
+                      <div class="text">${msg.text}</div>`;
     chatEl.appendChild(wrap);
     chatEl.scrollTop = chatEl.scrollHeight;
   }
 
-  function updateChatState(){ msgInput.disabled = state.locked || state.muted; }
-
-  // Listen to Firebase messages live
+  // Listen to messages live
   db.collection("messages").orderBy("time")
     .onSnapshot(snapshot=>{
       chatEl.innerHTML = "";
       snapshot.forEach(doc=>{
-        const msg = doc.data();
-        addMessage(msg, msg.name === (userInput.value.trim()||"anon"));
+        const m = doc.data();
+        addMessage(m, m.name === (userInput.value.trim()||"anon"));
       });
     });
 
-  // Send messages
+  // Send message
   formEl.addEventListener("submit", e=>{
     e.preventDefault();
-    if(state.locked || state.muted) return;
     const text = msgInput.value.trim();
     if(!text) return;
-    const msg = {name:userInput.value.trim()||"anon", text, time:Date.now()};
-    db.collection("messages").add(msg);
+    db.collection("messages").add({
+      name: userInput.value.trim()||"anon",
+      text,
+      time: Date.now()
+    });
     msgInput.value = "";
   });
 
-  // Teacher mode
-  document.addEventListener("keydown", e=>{
-    if(e.ctrlKey && e.shiftKey && e.key.toLowerCase()==="y"){
-      const pass = prompt("Teacher password:");
-      if(pass !== TEACHER_PASSWORD) return alert("Wrong password");
-      const action = prompt("Teacher Mode:\n1=Lock\n2=Unlock\n3=Mute\n4=Unmute\n5=Clear chat");
-      switch(action){
-        case "1": state.locked=true; break;
-        case "2": state.locked=false; break;
-        case "3": state.muted=true; break;
-        case "4": state.muted=false; break;
-        case "5": db.collection("messages").get().then(snap=>{
-          snap.forEach(doc=>doc.ref.delete());
-        }); break;
-      }
-      updateChatState();
-    }
+  // Clear chat button
+  clearBtn.addEventListener("click", ()=>{
+    const pass = prompt("Teacher password:");
+    if(pass !== TEACHER_PASSWORD) return alert("Wrong password");
+    db.collection("messages").get().then(snap=>{
+      snap.forEach(doc => doc.ref.delete());
+    }).then(()=> alert("Chat cleared!"));
   });
 </script>
 </body>
