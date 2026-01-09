@@ -7,8 +7,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
 :root {
-  --bg:#f0f4ff;
-  --panel:#dce4ff;
+  --bg:#eef3ff;
+  --panel:#dbe6ff;
   --chat-bg:#ffffff;
   --my-msg:#a8c7ff;
   --other-msg:#e7edff;
@@ -17,53 +17,39 @@
   --meta:#555;
 }
 
-* {margin:0; padding:0; box-sizing:border-box; font-family:'Inter',sans-serif;}
-body {display:flex; height:100vh; background:var(--bg); color:var(--text);}
+*{margin:0; padding:0; box-sizing:border-box; font-family:'Inter', sans-serif;}
 
-#sidebar {
-  width:240px;
-  background:var(--panel);
-  display:flex;
-  flex-direction:column;
-  padding:12px;
-  gap:10px;
-  overflow-y:auto;
+body{display:flex; height:100vh; background:var(--bg); color:var(--text);}
+
+#sidebar{
+  width:250px; background:var(--panel); padding:12px; display:flex; flex-direction:column; gap:12px; overflow-y:auto;
 }
-#sidebar h2 {margin-bottom:6px;}
-#rooms, #online-users {margin-bottom:16px;}
-.room, .user {
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  padding:6px 8px;
-  margin-bottom:6px;
-  border-radius:8px;
-  cursor:pointer;
-  background:#cfe0ff;
+#sidebar h2{margin-bottom:6px;}
+.room, .user{
+  display:flex; justify-content:space-between; align-items:center; padding:6px 8px; border-radius:6px; cursor:pointer; background:#cfe0f5; margin-bottom:6px;
 }
-.room.selected, .user.selected {background:var(--accent); color:#fff;}
-.room:hover, .user:hover {background:#b0c9eb;}
-.avatar {width:32px; height:32px; border-radius:50%; background:var(--accent); color:white; display:flex; align-items:center; justify-content:center; font-weight:700; margin-right:6px; flex-shrink:0;}
-
-#chat-container {flex:1; display:flex; flex-direction:column; background:var(--chat-bg);}
-#chat {flex:1; padding:12px; overflow-y:auto; display:flex; flex-direction:column; gap:6px;}
-
-.msg {max-width:70%; padding:10px 14px; border-radius:14px; position:relative; word-wrap:break-word;}
-.me {align-self:flex-end; background:var(--my-msg);}
-.other {align-self:flex-start; background:var(--other-msg);}
-.meta {font-size:0.75rem; color:var(--meta); margin-bottom:2px;}
-.typing {font-size:0.75rem; font-style:italic; color:#888; margin-left:6px;}
-
-#form {display:flex; gap:6px; padding:10px; background:var(--panel);}
-#msg {flex:1; padding:10px; border-radius:8px; border:1px solid #aaa; font-size:1rem;}
-button {padding:10px 14px; border:none; border-radius:8px; background:var(--accent); color:#fff; cursor:pointer; font-weight:bold;}
-button:disabled {opacity:0.5; cursor:default;}
+.room.selected, .user.selected{background:var(--accent); color:#fff;}
+.room:hover, .user:hover{background:#b0c9eb;}
+.avatar{
+  width:32px; height:32px; border-radius:50%; background:var(--accent); color:white; display:flex; align-items:center; justify-content:center; font-weight:700; margin-right:6px; flex-shrink:0;
+}
+#chat-wrap{flex:1; display:flex; flex-direction:column; background:var(--chat-bg);}
+#chat{flex:1; padding:12px; overflow-y:auto; display:flex; flex-direction:column; gap:6px;}
+.msg{max-width:70%; padding:10px; border-radius:14px; position:relative; word-wrap:break-word;}
+.me{align-self:flex-end; background:var(--my-msg);}
+.other{align-self:flex-start; background:var(--other-msg);}
+.meta{font-size:12px; opacity:.6; margin-bottom:2px;}
+.typing{font-size:12px; font-style:italic; color:#888; margin-left:4px;}
+form{display:flex; gap:6px; padding:10px; background:var(--panel);}
+input{flex:1; padding:10px; border-radius:8px; border:1px solid #aaa;}
+button{padding:8px 12px; border:none; border-radius:8px; background:var(--accent); color:white; font-weight:600; cursor:pointer;}
+button:disabled{opacity:0.5; cursor:default;}
 
 @media(max-width:768px){
-  #sidebar {width:180px; font-size:0.9rem;}
-  .avatar {width:24px; height:24px;}
-  #msg {font-size:0.9rem;}
-  button {padding:8px 12px; font-size:0.9rem;}
+  #sidebar{width:180px; font-size:0.9rem;}
+  .avatar{width:24px; height:24px;}
+  input{font-size:0.9rem;}
+  button{font-size:0.9rem; padding:6px 10px;}
 }
 </style>
 </head>
@@ -71,146 +57,141 @@ button:disabled {opacity:0.5; cursor:default;}
 
 <div id="sidebar">
   <h2>Rooms</h2>
-  <div id="rooms">
-    <div class="room selected" data-room="General">General</div>
-  </div>
-  <input id="new-room-name" placeholder="New room name" style="padding:6px; border-radius:6px; border:1px solid #aaa; margin-bottom:6px;">
+  <div id="rooms"></div>
+  <input id="new-room-name" placeholder="New room name">
+  <input id="new-room-pass" placeholder="Optional password">
   <button id="create-room">Create Room</button>
 
   <h2>Online Users</h2>
-  <div id="online-users"></div>
-  <button id="invite">Invite Friend</button>
-  <button id="clear">Clear Chat</button>
+  <div id="users"></div>
+  <button id="invite-btn">Invite Friend</button>
+  <button id="clear-btn">Clear Chat</button>
 </div>
 
-<div id="chat-container">
+<div id="chat-wrap">
   <div id="chat"></div>
   <div id="typing"></div>
-  <form id="form">
-    <input id="msg" placeholder="Type a message..." autocomplete="off">
-    <button type="submit">Send</button>
+  <form id="chat-form">
+    <input id="msg" placeholder="Type a message…" autocomplete="off">
+    <button>Send</button>
   </form>
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script>
-/* 🔐 CONFIG */
-firebase.initializeApp({
-  apiKey: "AIzaSyD9GQMi0v4ItnkJ2uqKtUUQU59DorLrCAg",
-  authDomain: "live-chat-3d2c3.firebaseapp.com",
-  projectId: "live-chat-3d2c3"
-});
 
+<script>
+// 🔐 CONFIG
+firebase.initializeApp({
+  apiKey:"AIzaSyD9GQMi0v4ItnkJ2uqKtUUQU59DorLrCAg",
+  authDomain:"live-chat-3d2c3.firebaseapp.com",
+  projectId:"live-chat-3d2c3"
+});
 const db = firebase.firestore();
 
-/* 👤 USERNAME */
-let name = localStorage.getItem("name");
-while(!name || name.trim().length < 2){
-  name = prompt("Choose a username (2+ letters)");
+// 👤 USER
+let username = localStorage.getItem("username");
+while(!username || username.trim().length<2){
+  username = prompt("Choose a username (2+ letters):").trim();
 }
-name = name.trim();
-localStorage.setItem("name", name);
+localStorage.setItem("username", username);
 
-/* 🌐 ONLINE USERS */
-const onlineRef = db.collection("online").doc(name);
-onlineRef.set({name});
+// 🌐 ONLINE USERS
+const usersEl = document.getElementById("users");
+const onlineRef = db.collection("online").doc(username);
+onlineRef.set({name:username});
 window.addEventListener("beforeunload", ()=>onlineRef.delete());
-
-const onlineUsersEl = document.getElementById("online-users");
-db.collection("online").onSnapshot(s=>{
-  onlineUsersEl.innerHTML="";
-  s.forEach(d=>{
-    const u = d.data().name;
+db.collection("online").onSnapshot(snapshot=>{
+  usersEl.innerHTML="";
+  snapshot.forEach(doc=>{
+    const u = doc.data().name;
     const div = document.createElement("div");
     div.className="user";
-    div.innerHTML=`<div class="avatar">${u[0].toUpperCase()}</div>${u}`;
-    onlineUsersEl.appendChild(div);
+    div.innerHTML = `<div class="avatar">${u[0].toUpperCase()}</div>${u}`;
+    usersEl.appendChild(div);
   });
 });
 
-/* 💬 ROOMS */
-let currentRoom = "General";
+// 💬 ROOMS
 const roomsEl = document.getElementById("rooms");
-const chatEl = document.getElementById("chat");
+let currentRoom = "General";
 
-function joinRoom(room){
-  currentRoom = room;
+function addRoom(name){
+  const div = document.createElement("div");
+  div.className = "room";
+  div.textContent = name;
+  div.addEventListener("click", ()=>joinRoom(name));
+  roomsEl.appendChild(div);
+}
+function joinRoom(name){
+  currentRoom=name;
   document.querySelectorAll(".room").forEach(r=>r.classList.remove("selected"));
-  document.querySelector(`[data-room="${room}"]`).classList.add("selected");
-  listenMessages(room);
+  [...roomsEl.children].forEach(r=>{if(r.textContent===name) r.classList.add("selected")});
+  listenMessages();
 }
-
-function listenMessages(room){
-  chatEl.innerHTML="";
-  db.collection("messages").where("room","==",room).orderBy("time")
-    .onSnapshot(snapshot=>{
-      chatEl.innerHTML="";
-      snapshot.forEach(doc=>{
-        const m = doc.data();
-        const div = document.createElement("div");
-        div.className = `msg ${m.user===name?"me":"other"}`;
-        div.innerHTML=`<div class="meta">${m.user}</div>${m.text}`;
-        chatEl.appendChild(div);
-      });
-      chatEl.scrollTop=chatEl.scrollHeight;
-    });
-}
+addRoom("General");
+joinRoom("General");
 
 document.getElementById("create-room").addEventListener("click", ()=>{
-  const r = document.getElementById("new-room-name").value.trim();
-  if(!r) return;
-  const div = document.createElement("div");
-  div.className="room";
-  div.textContent=r;
-  div.dataset.room=r;
-  div.addEventListener("click", ()=>joinRoom(r));
-  roomsEl.appendChild(div);
+  const rName=document.getElementById("new-room-name").value.trim();
+  const rPass=document.getElementById("new-room-pass").value.trim();
+  if(!rName) return;
+  db.collection("rooms").doc(rName).set({password:rPass});
+  addRoom(rName);
   document.getElementById("new-room-name").value="";
+  document.getElementById("new-room-pass").value="";
 });
 
-joinRoom(currentRoom);
-
-/* ✉️ SEND MESSAGE */
-const form = document.getElementById("form");
+// 💬 MESSAGES
+const chatEl = document.getElementById("chat");
 const msgInput = document.getElementById("msg");
-
-form.onsubmit = e => {
+document.getElementById("chat-form").addEventListener("submit", e=>{
   e.preventDefault();
   if(!msgInput.value.trim()) return;
   db.collection("messages").add({
-    user: name,
-    text: msgInput.value,
-    room: currentRoom,
-    time: Date.now(),
-    typing:false
+    user:username,
+    text:msgInput.value,
+    room:currentRoom,
+    time:Date.now()
   });
   msgInput.value="";
-};
+});
 
-/* 🧹 CLEAR CHAT (everyone) */
-document.getElementById("clear").addEventListener("click", ()=>{
-  db.collection("messages").get().then(s=>{
-    s.forEach(d=>d.ref.delete());
+// Listen messages per room
+function listenMessages(){
+  db.collection("messages").where("room","==",currentRoom).orderBy("time")
+  .onSnapshot(snapshot=>{
+    chatEl.innerHTML="";
+    snapshot.forEach(doc=>{
+      const m=doc.data();
+      const div=document.createElement("div");
+      div.className = "msg " + (m.user===username?"me":"other");
+      div.innerHTML=`<div class="meta">${m.user}</div>${m.text}`;
+      chatEl.appendChild(div);
+    });
+    chatEl.scrollTop = chatEl.scrollHeight;
   });
-});
+}
+listenMessages();
 
-/* ✍️ TYPING INDICATOR */
-const typingEl = document.getElementById("typing");
-let typingTimeout;
-msgInput.addEventListener("input", ()=>{
-  db.collection("typing").doc(name).set({typing:true});
-  clearTimeout(typingTimeout);
-  typingTimeout = setTimeout(()=>db.collection("typing").doc(name).delete(), 800);
-});
-
+// ✍️ TYPING
+msgInput.oninput=()=>{
+  db.collection("typing").doc(username).set({typing:true});
+  setTimeout(()=>db.collection("typing").doc(username).delete(),1000);
+};
 db.collection("typing").onSnapshot(s=>{
-  const typers = s.docs.map(d=>d.id).filter(u=>u!==name);
-  typingEl.textContent = typers.length ? "Someone is typing…" : "";
+  const typingUsers=[...s.docs].map(d=>d.id).filter(u=>u!==username);
+  document.getElementById("typing").textContent=typingUsers.length?"Someone is typing…":"";
 });
 
-/* 🔗 INVITE FRIEND */
-document.getElementById("invite").addEventListener("click", ()=>{
+// 🧹 CLEAR
+document.getElementById("clear-btn").addEventListener("click",()=>{
+  db.collection("messages").where("room","==",currentRoom).get()
+    .then(s=>s.forEach(d=>d.ref.delete()));
+});
+
+// 🔗 INVITE
+document.getElementById("invite-btn").addEventListener("click",()=>{
   navigator.clipboard.writeText(location.href);
   alert("Invite link copied 💌");
 });
