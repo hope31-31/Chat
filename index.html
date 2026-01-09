@@ -4,55 +4,39 @@
 <meta charset="UTF-8">
 <title>Chat</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg:#e0f0ff;
-  --panel:#cfe8ff;
-  --chat-bg:#ffffff;
-  --my-msg:#9fc9f2;
-  --other-msg:#dceafc;
+  --bg:#eef3ff;
+  --panel:#dbe6ff;
+  --chat-bg:#fff;
+  --me:#a8c7ff;
+  --other:#e7edff;
   --accent:#5b7cfa;
-  --text:#111;
+  --text:#1b1b1b;
 }
-
-*{margin:0;padding:0;box-sizing:border-box;font-family:'Inter',sans-serif;}
-body{display:flex;height:100vh;background:var(--bg);color:var(--text);}
-
-#sidebar{
-  width:220px;
-  background:var(--panel);
-  padding:12px;
-  display:flex;
-  flex-direction:column;
-  gap:12px;
-}
-#sidebar h2{font-size:1rem;margin-bottom:4px;}
-#sidebar button{padding:8px;border:none;border-radius:6px;background:var(--accent);color:#fff;font-weight:600;cursor:pointer;}
-
-#rooms, #online-users{display:flex;flex-direction:column;gap:4px;}
-.room, .user{display:flex;align-items:center;justify-content:space-between;padding:6px 8px;border-radius:6px;background:#fff;cursor:pointer;}
-.room.selected{background:var(--accent);color:#fff;}
-.room:hover, .user:hover{background:#b0c9eb;}
-
-.avatar{width:28px;height:28px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;margin-right:6px;flex-shrink:0;}
-
-#chat-container{flex:1;display:flex;flex-direction:column;}
+*{box-sizing:border-box;font-family:'Inter',sans-serif;margin:0;padding:0;}
+body{display:flex;height:100vh;background:var(--bg);}
+#sidebar{width:220px;background:var(--panel);padding:12px;display:flex;flex-direction:column;gap:10px;overflow-y:auto;}
+#sidebar h2{margin-bottom:6px;font-size:1.1rem;}
+.room,.user{display:flex;align-items:center;justify-content:space-between;padding:6px 8px;border-radius:6px;cursor:pointer;background:#fff;margin-bottom:6px;}
+.room.selected,.user.selected{background:var(--accent);color:#fff;}
+.avatar{width:32px;height:32px;border-radius:50%;background:var(--accent);color:white;display:flex;align-items:center;justify-content:center;font-weight:700;margin-right:6px;}
+#chat-wrap{flex:1;display:flex;flex-direction:column;}
 #chat{flex:1;padding:12px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;background:var(--chat-bg);}
-.msg{max-width:70%;padding:10px 14px;border-radius:14px;position:relative;word-wrap:break-word;}
-.me{align-self:flex-end;background:var(--my-msg);}
-.other{align-self:flex-start;background:var(--other-msg);}
-.meta{font-size:0.75rem;color:#555;margin-bottom:2px;}
-.typing{font-size:0.75rem;font-style:italic;color:#888;margin-left:4px;}
-
-#form{display:flex;gap:6px;padding:10px;background:var(--panel);}
-#msg{flex:1;padding:10px;border-radius:6px;border:1px solid #aaa;font-size:1rem;}
-button.send-btn{padding:10px 14px;border:none;border-radius:6px;background:var(--accent);color:#fff;font-weight:bold;cursor:pointer;}
+.msg{max-width:70%;padding:10px;border-radius:14px;}
+.me{align-self:flex-end;background:var(--me);}
+.other{align-self:flex-start;background:var(--other);}
+.meta{font-size:12px;color:var(--text);opacity:0.7;margin-bottom:2px;}
+#typing{font-size:12px;font-style:italic;margin-left:12px;color:#666;}
+form{display:flex;padding:10px;gap:6px;background:var(--panel);}
+input{flex:1;padding:10px;border-radius:6px;border:1px solid #aaa;}
+button{padding:8px 12px;border:none;border-radius:6px;background:var(--accent);color:white;font-weight:600;cursor:pointer;}
 @media(max-width:768px){
-  #sidebar{width:150px;}
+  #sidebar{width:160px;font-size:0.85rem;}
   .avatar{width:24px;height:24px;font-size:0.8rem;}
-  #msg{font-size:0.9rem;}
-  button.send-btn{padding:8px 12px;font-size:0.9rem;}
+  input{font-size:0.9rem;}
+  button{padding:6px 10px;font-size:0.9rem;}
 }
 </style>
 </head>
@@ -61,118 +45,104 @@ button.send-btn{padding:10px 14px;border:none;border-radius:6px;background:var(-
 <div id="sidebar">
   <h2>Rooms</h2>
   <div id="rooms"></div>
-  <input id="new-room" placeholder="New room name" style="padding:6px;border-radius:6px;border:1px solid #aaa;">
-  <input id="new-pass" placeholder="Private password (optional)" style="padding:6px;border-radius:6px;border:1px solid #aaa;">
+  <input id="new-room" placeholder="New room name">
+  <input id="new-room-pass" placeholder="Room password (optional)">
   <button id="create-room">Create Room</button>
 
-  <h2>Online</h2>
-  <div id="online-users"></div>
-  <button onclick="invite()">Invite Friend</button>
+  <h2>Online Users</h2>
+  <div id="users"></div>
+
+  <button id="invite-btn">Invite Friend</button>
   <button id="clear-btn">Clear Chat</button>
 </div>
 
-<div id="chat-container">
+<div id="chat-wrap">
   <div id="chat"></div>
   <div id="typing"></div>
   <form id="form">
     <input id="msg" placeholder="Type a message…" autocomplete="off">
-    <button type="submit" class="send-btn">Send</button>
+    <button type="submit">Send</button>
   </form>
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-
 <script>
-// CONFIG
-const firebaseConfig = {
+// 🔐 Firebase
+firebase.initializeApp({
   apiKey: "AIzaSyD9GQMi0v4ItnkJ2uqKtUUQU59DorLrCAg",
   authDomain: "live-chat-3d2c3.firebaseapp.com",
   projectId: "live-chat-3d2c3"
-};
-firebase.initializeApp(firebaseConfig);
+});
 const db = firebase.firestore();
 
-// USERNAME
+// 👤 Username
 let username = localStorage.getItem("username");
 while(!username || username.trim().length<2){
   username = prompt("Enter a username (2+ letters)");
 }
 username = username.trim();
-localStorage.setItem("username",username);
+localStorage.setItem("username", username);
 
-// ROOMS
-let currentRoom = "General";
-const roomsEl = document.getElementById("rooms");
-const newRoomInput = document.getElementById("new-room");
-const newPassInput = document.getElementById("new-pass");
+// 🌐 Elements
+const roomsEl=document.getElementById("rooms");
+const usersEl=document.getElementById("users");
+const chatEl=document.getElementById("chat");
+const typingEl=document.getElementById("typing");
+const form=document.getElementById("form");
+const msgInput=document.getElementById("msg");
+const newRoomInput=document.getElementById("new-room");
+const newRoomPass=document.getElementById("new-room-pass");
+const createRoomBtn=document.getElementById("create-room");
+const clearBtn=document.getElementById("clear-btn");
+const inviteBtn=document.getElementById("invite-btn");
 
-const rooms = {"General":""}; // room name:password
+let currentRoom="General";
+let rooms={};
 
-function addRoom(name){
-  const div = document.createElement("div");
-  div.className = "room" + (name===currentRoom?" selected":"");
-  div.textContent = name;
-  div.onclick = ()=>joinRoom(name);
-  roomsEl.appendChild(div);
+// --- CREATE GENERAL ROOM ---
+db.collection("rooms").doc("General").set({name:"General", password:""}).then(()=>loadRooms());
+
+// --- LOAD ROOMS ---
+function loadRooms(){
+  db.collection("rooms").get().then(snap=>{
+    roomsEl.innerHTML="";
+    rooms={};
+    snap.forEach(d=>{
+      const data=d.data();
+      rooms[data.name]=data.password;
+      const div=document.createElement("div");
+      div.className="room "+(data.name===currentRoom?"selected":"");
+      div.textContent=data.name;
+      div.onclick=()=>joinRoom(data.name);
+      roomsEl.appendChild(div);
+    });
+  });
 }
 
-function joinRoom(name){
-  const pass = rooms[name];
+// --- JOIN ROOM ---
+function joinRoom(room){
+  const pass=rooms[room];
   if(pass){
-    const input = prompt("Enter password for "+name);
-    if(input!==pass){ alert("Wrong password"); return; }
+    if(pass!==""){
+      const entered=prompt("Enter password for "+room);
+      if(entered!==pass){ alert("Wrong password"); return; }
+    }
   }
-  currentRoom=name;
-  document.querySelectorAll(".room").forEach(r=>r.classList.remove("selected"));
-  Array.from(roomsEl.children).forEach(r=>{ if(r.textContent===name) r.classList.add("selected"); });
+  currentRoom=room;
+  Array.from(roomsEl.children).forEach(r=>r.classList.remove("selected"));
+  Array.from(roomsEl.children).forEach(r=>{ if(r.textContent===room) r.classList.add("selected"); });
   listenMessages();
 }
 
-document.getElementById("create-room").onclick=()=>{
-  const r = newRoomInput.value.trim();
-  if(!r) return;
-  const pass = newPassInput.value.trim();
-  rooms[r]=pass;
-  addRoom(r);
-  newRoomInput.value=""; newPassInput.value="";
-};
-
-addRoom("General");
-
-// ONLINE USERS
-const usersEl = document.getElementById("online-users");
-const onlineRef = db.collection("online").doc(username);
-onlineRef.set({name:username});
-window.addEventListener("beforeunload",()=>onlineRef.delete());
-
-db.collection("online").onSnapshot(snapshot=>{
-  usersEl.innerHTML="";
-  snapshot.forEach(d=>{
-    const u = d.data().name;
-    const div = document.createElement("div");
-    div.className="user";
-    div.innerHTML=`<div class="avatar">${u[0].toUpperCase()}</div>${u}`;
-    usersEl.appendChild(div);
-  });
-});
-
-// CHAT
-const chatEl = document.getElementById("chat");
-const typingEl = document.getElementById("typing");
-const chatForm = document.getElementById("form");
-const msgInput = document.getElementById("msg");
-let unsubscribeMessages = null;
-
+// --- LISTEN MESSAGES ---
 function listenMessages(){
-  if(unsubscribeMessages) unsubscribeMessages();
-  unsubscribeMessages = db.collection("messages")
-    .where("room","==",currentRoom)
-    .orderBy("time")
+  chatEl.innerHTML="";
+  db.collection("messages").where("room","==",currentRoom).orderBy("time")
     .onSnapshot(snapshot=>{
       chatEl.innerHTML="";
-      snapshot.forEach(doc=>{
-        const m = doc.data();
+      snapshot.forEach(d=>{
+        const m=d.data();
         const div=document.createElement("div");
         div.className="msg "+(m.user===username?"me":"other");
         div.innerHTML=`<div class="meta">${m.user}</div>${m.text}`;
@@ -181,10 +151,20 @@ function listenMessages(){
       chatEl.scrollTop=chatEl.scrollHeight;
     });
 }
-listenMessages();
+joinRoom("General");
 
-// SEND MESSAGE
-chatForm.onsubmit=e=>{
+// --- CREATE ROOM ---
+createRoomBtn.onclick=()=>{
+  const r=newRoomInput.value.trim();
+  const p=newRoomPass.value.trim();
+  if(!r) return;
+  db.collection("rooms").doc(r).set({name:r,password:p});
+  newRoomInput.value=""; newRoomPass.value="";
+  loadRooms();
+};
+
+// --- SEND MESSAGE ---
+form.onsubmit=e=>{
   e.preventDefault();
   if(!msgInput.value.trim()) return;
   db.collection("messages").add({
@@ -196,26 +176,36 @@ chatForm.onsubmit=e=>{
   msgInput.value="";
 };
 
-// CLEAR CHAT (everyone can)
-document.getElementById("clear-btn").onclick=()=>{
-  db.collection("messages").get().then(s=>{
-    s.forEach(d=>d.ref.delete());
+// --- ONLINE USERS ---
+const onlineRef=db.collection("online").doc(username);
+onlineRef.set({name:username});
+window.addEventListener("beforeunload",()=>onlineRef.delete());
+db.collection("online").onSnapshot(s=>{
+  usersEl.innerHTML="";
+  s.forEach(d=>{
+    const u=d.data().name;
+    const div=document.createElement("div");
+    div.className="user";
+    div.innerHTML=`<div class="avatar">${u[0].toUpperCase()}</div>${u}`;
+    usersEl.appendChild(div);
   });
-};
+});
 
-// TYPING INDICATOR
+// --- TYPING ---
 msgInput.oninput=()=>{
   db.collection("typing").doc(username).set({typing:true});
   setTimeout(()=>db.collection("typing").doc(username).delete(),800);
 };
 db.collection("typing").onSnapshot(s=>{
-  const typingUsers = s.docs.map(d=>d.id).filter(u=>u!==username);
-  typingEl.textContent=typingUsers.length ? "Someone is typing…" : "";
+  const typingUsers=[...s.docs].map(d=>d.id).filter(u=>u!==username);
+  typingEl.textContent=typingUsers.length?"Someone is typing…":"";
 });
 
-// INVITE
-function invite(){ navigator.clipboard.writeText(location.href); alert("Invite link copied!"); }
+// --- CLEAR CHAT ---
+clearBtn.onclick=()=>{ chatEl.innerHTML=""; };
 
+// --- INVITE ---
+inviteBtn.onclick=()=>{ navigator.clipboard.writeText(location.href); alert("Invite link copied!"); };
 </script>
 </body>
 </html>
