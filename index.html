@@ -2,311 +2,156 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Clean Chat</title>
+<title>Class Chat</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
-
 <style>
 :root{
-  --bg:#eef3fb;
-  --sidebar:#dbe6f7;
+  --bg:#eef4fb;
+  --sidebar:#dbe9f8;
   --chat:#ffffff;
-  --primary:#7da6e8;
-  --secondary:#c8d9f6;
-  --me:#7da6e8;
-  --other:#e6efff;
-  --text:#1f1f1f;
+  --me:#b7d7ff;
+  --other:#e6f0ff;
+  --accent:#5c8df6;
+  --text:#1b1b1b;
 }
-
-*{box-sizing:border-box;font-family:'Inter',sans-serif}
-
-body{
-  margin:0;
-  height:100vh;
-  display:flex;
-  background:var(--bg);
-}
+*{box-sizing:border-box;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto;}
+body{margin:0;height:100vh;display:flex;background:var(--bg);color:var(--text);}
 
 /* SIDEBAR */
-#sidebar{
-  width:220px;
-  background:var(--sidebar);
-  padding:12px;
-  display:flex;
-  flex-direction:column;
-  gap:12px;
-}
-
-.section h3{
-  margin:0 0 6px;
-  font-size:14px;
-}
-
-.item{
-  display:flex;
-  align-items:center;
-  gap:8px;
-  padding:6px;
-  border-radius:8px;
-  cursor:pointer;
-}
-
-.item:hover{background:var(--secondary)}
-
-.avatar{
-  width:32px;
-  height:32px;
-  border-radius:50%;
-  background:#9bb6e8;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  color:white;
-  font-weight:600;
-  overflow:hidden;
-}
-
-.avatar img{
-  width:100%;
-  height:100%;
-  object-fit:cover;
-}
-
-#rooms,#users{display:flex;flex-direction:column;gap:4px}
+#sidebar{width:220px;background:var(--sidebar);padding:10px;overflow:auto;}
+#sidebar h3{margin:8px 0;font-size:1rem;}
+.user{padding:6px;border-radius:6px;background:#fff;margin-bottom:4px;font-size:.9rem;display:flex;justify-content:space-between;align-items:center;}
+.user button{font-size:.7rem;padding:2px 6px;border-radius:6px;background:#ff6b6b;color:#fff;border:none;}
 
 /* CHAT */
-#chat-container{
-  flex:1;
-  display:flex;
-  flex-direction:column;
-  background:var(--chat);
-}
-
-#chat{
-  flex:1;
-  padding:14px;
-  overflow-y:auto;
-  display:flex;
-  flex-direction:column;
-  gap:8px;
-}
-
-.message{
-  max-width:75%;
-  padding:10px;
-  border-radius:14px;
-}
-
-.me{background:var(--me);color:white;align-self:flex-end}
-.other{background:var(--other);align-self:flex-start}
-
-.meta{font-size:11px;opacity:.6}
-
-#typing{
-  font-size:12px;
-  padding:4px 14px;
-  font-style:italic;
-  opacity:.6;
-}
+#chatWrap{flex:1;display:flex;flex-direction:column;}
+#chat{flex:1;padding:10px;overflow:auto;display:flex;flex-direction:column;gap:6px;}
+.msg{max-width:75%;padding:8px 12px;border-radius:14px;}
+.me{align-self:flex-end;background:var(--me);}
+.other{align-self:flex-start;background:var(--other);}
+.meta{font-size:.7rem;opacity:.6;margin-bottom:2px;}
+#typing{font-size:.7rem;opacity:.6;padding-left:10px;height:16px;}
 
 /* INPUT */
-#input{
-  display:flex;
-  gap:8px;
-  padding:10px;
-  background:var(--sidebar);
-}
+#form{display:flex;gap:6px;padding:8px;background:var(--sidebar);}
+#message{flex:1;padding:10px;border-radius:8px;border:1px solid #ccc;}
+button{background:var(--accent);color:#fff;border:none;border-radius:8px;padding:8px 12px;font-weight:600;}
 
-#msg{
-  flex:1;
-  padding:10px;
-  border-radius:10px;
-  border:none;
-}
-
-button{
-  padding:10px 14px;
-  border:none;
-  border-radius:10px;
-  background:var(--primary);
-  color:white;
-  font-weight:600;
-  cursor:pointer;
-}
-
-button.small{padding:6px 10px;font-size:12px}
-
-.timeout{
-  background:linear-gradient(#9ecbff,#e6f2ff);
-  color:#1b3a6b;
-}
-
-/* MOBILE */
-@media(max-width:700px){
-  #sidebar{width:160px}
+@media(max-width:600px){
+  #sidebar{width:140px;font-size:.8rem}
 }
 </style>
 </head>
-
 <body>
 
 <div id="sidebar">
-  <div class="section">
-    <h3>You</h3>
-    <div class="item">
-      <div class="avatar" id="myAvatar">67</div>
-      <span id="myName"></span>
-    </div>
-    <input type="file" id="avatarUpload" accept="image/*">
-  </div>
-
-  <div class="section">
-    <h3>Rooms</h3>
-    <div id="rooms"></div>
-    <input id="roomInput" placeholder="New room">
-    <button onclick="createRoom()">Create</button>
-  </div>
-
-  <div class="section">
-    <h3>Online</h3>
-    <div id="users"></div>
-  </div>
-
-  <button onclick="unlockAdmin()">Admin</button>
+  <h3>Online</h3>
+  <div id="online"></div>
 </div>
 
-<div id="chat-container">
+<div id="chatWrap">
   <div id="chat"></div>
   <div id="typing"></div>
-  <div id="input">
-    <input id="msg" placeholder="Type a message…">
-    <button onclick="send()">Send</button>
-  </div>
+  <form id="form">
+    <input id="message" placeholder="Type a message…" autocomplete="off">
+    <button type="submit">Send</button>
+    <button type="button" id="clearBtn">Clear</button>
+  </form>
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-
 <script>
 firebase.initializeApp({
-  apiKey:"AIzaSyD9GQMi0v4ItnkJ2uqKtUUQU59DorLrCAg",
-  authDomain:"live-chat-3d2c3.firebaseapp.com",
-  projectId:"live-chat-3d2c3"
+  apiKey: "AIzaSyD9GQMi0v4ItnkJ2uqKtUUQU59DorLrCAg",
+  authDomain: "live-chat-3d2c3.firebaseapp.com",
+  projectId: "live-chat-3d2c3"
 });
 const db=firebase.firestore();
 
 /* USER */
-let username=localStorage.getItem("name");
-if(!username){
-  username=prompt("Choose a username");
-  localStorage.setItem("name",username);
+let uid=localStorage.getItem("uid");
+if(!uid){uid=crypto.randomUUID();localStorage.setItem("uid",uid);}
+let name=localStorage.getItem("name");
+if(!name){
+  name=prompt("Choose a username")||"User";
+  localStorage.setItem("name",name);
 }
-myName.textContent=username;
-
-let avatar=localStorage.getItem("avatar");
-if(avatar) myAvatar.innerHTML=`<img src="${avatar}">`;
-
-avatarUpload.onchange=e=>{
-  const r=new FileReader();
-  r.onload=()=>{
-    avatar=r.result;
-    localStorage.setItem("avatar",avatar);
-    myAvatar.innerHTML=`<img src="${avatar}">`;
-  };
-  r.readAsDataURL(e.target.files[0]);
-};
-
-let room="General";
-let admin=false;
-
-/* ROOMS */
-function renderRooms(){
-  rooms.innerHTML="";
-  ["General",...new Set(customRooms)].forEach(r=>{
-    const d=document.createElement("div");
-    d.className="item";
-    d.textContent=r;
-    d.onclick=()=>room=r;
-    rooms.appendChild(d);
-  });
-}
-let customRooms=[];
-renderRooms();
-
-function createRoom(){
-  const r=roomInput.value.trim();
-  if(!r)return;
-  customRooms.push(r);
-  renderRooms();
-  room=r;
-  roomInput.value="";
-}
+const IS_ADMIN=name.toLowerCase()==="ayla";
 
 /* ONLINE */
-db.collection("online").doc(username).set({room});
-window.onbeforeunload=()=>db.collection("online").doc(username).delete();
+const onlineRef=db.collection("online");
+onlineRef.doc(uid).set({name});
+window.addEventListener("beforeunload",()=>onlineRef.doc(uid).delete());
 
-db.collection("online").onSnapshot(s=>{
-  users.innerHTML="";
-  s.forEach(doc=>{
-    const u=doc.id;
-    const d=document.createElement("div");
-    d.className="item";
-    d.textContent=u;
-    if(admin && u!==username){
-      const k=document.createElement("button");
-      k.textContent="Kick";
-      k.className="small";
-      k.onclick=()=>kick(u);
-      d.appendChild(k);
+onlineRef.onSnapshot(s=>{
+  online.innerHTML="";
+  s.forEach(d=>{
+    const u=d.data();
+    const div=document.createElement("div");
+    div.className="user";
+    div.textContent=u.name;
+    if(IS_ADMIN && u.name!==name){
+      const b=document.createElement("button");
+      b.textContent="Kick";
+      b.onclick=()=>kick(u.name,d.id);
+      div.appendChild(b);
     }
-    users.appendChild(d);
+    online.appendChild(div);
   });
 });
 
 /* CHAT */
-msg.oninput=()=>{
-  db.collection("typing").doc(username).set({room});
-  setTimeout(()=>db.collection("typing").doc(username).delete(),1000);
-};
-
-db.collection("typing").onSnapshot(s=>{
-  const others=[...s.docs].filter(d=>d.id!==username);
-  typing.textContent=others.length?`${others[0].id} is typing…`:"";
-});
-
-function send(){
-  if(room==="Timeout") return;
-  const t=msg.value.trim();
-  if(!t)return;
-  db.collection("messages").add({user:username,text:t,room,time:Date.now()});
-  msg.value="";
-}
-
-db.collection("messages").orderBy("time").onSnapshot(s=>{
+const chatRef=db.collection("messages");
+chatRef.orderBy("time").onSnapshot(s=>{
   chat.innerHTML="";
   s.forEach(d=>{
     const m=d.data();
-    if(m.room!==room)return;
     const div=document.createElement("div");
-    div.className="message "+(m.user===username?"me":"other");
-    div.innerHTML=`<div class="meta">${m.user}</div>${m.text}`;
+    div.className="msg "+(m.name===name?"me":"other");
+    div.innerHTML=`<div class="meta">${m.name}</div>${m.text}`;
     chat.appendChild(div);
   });
   chat.scrollTop=chat.scrollHeight;
 });
 
-/* ADMIN */
-function unlockAdmin(){
-  if(prompt("Password")==="slay") admin=true;
-}
+/* SEND */
+form.onsubmit=e=>{
+  e.preventDefault();
+  if(!message.value.trim())return;
+  chatRef.add({name,text:message.value,time:Date.now()});
+  message.value="";
+};
 
-function kick(user){
-  if(user===username)return;
-  db.collection("online").doc(user).set({room:"Timeout"});
+/* TYPING */
+let typingTimer;
+message.oninput=()=>{
+  db.collection("typing").doc("now").set({name});
+  clearTimeout(typingTimer);
+  typingTimer=setTimeout(()=>db.collection("typing").doc("now").delete(),700);
+};
+db.collection("typing").doc("now").onSnapshot(d=>{
+  typing.textContent=d.exists?`${d.data().name} is typing…`:"";
+});
+
+/* CLEAR (LOCAL ONLY) */
+clearBtn.onclick=()=>{
+  chat.innerHTML="";
+};
+
+/* KICK */
+function kick(n,id){
+  const p=prompt("Kick password");
+  if(p!=="slay")return;
+  onlineRef.doc(id).delete();
+  db.collection("kicked").doc(n).set({time:Date.now()});
 }
+db.collection("kicked").doc(name).onSnapshot(d=>{
+  if(d.exists){
+    document.body.innerHTML=
+    "<div style='height:100vh;display:flex;align-items:center;justify-content:center;background:url(https://images.unsplash.com/photo-1500530855697-b586d89ba3ee) center/cover'><h1 style='color:white'>Timeout Room 🌥️</h1></div>";
+  }
+});
 </script>
-
 </body>
 </html>
