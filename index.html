@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Ultimate Class Chat</title>
+<title>Chat</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
@@ -61,6 +61,7 @@ button:disabled{opacity:0.5; cursor:default;}
   <input id="new-room-name" placeholder="New room name">
   <input id="new-room-pass" placeholder="Optional password">
   <button id="create-room">Create Room</button>
+  <button id="change-name">Change Username</button>
 
   <h2>Online Users</h2>
   <div id="users"></div>
@@ -81,7 +82,7 @@ button:disabled{opacity:0.5; cursor:default;}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
 <script>
-// 🔐 CONFIG
+// 🔐 FIREBASE
 firebase.initializeApp({
   apiKey:"AIzaSyD9GQMi0v4ItnkJ2uqKtUUQU59DorLrCAg",
   authDomain:"live-chat-3d2c3.firebaseapp.com",
@@ -184,7 +185,7 @@ db.collection("typing").onSnapshot(s=>{
   document.getElementById("typing").textContent=typingUsers.length?"Someone is typing…":"";
 });
 
-// 🧹 CLEAR
+// 🧹 CLEAR CHAT
 document.getElementById("clear-btn").addEventListener("click",()=>{
   db.collection("messages").where("room","==",currentRoom).get()
     .then(s=>s.forEach(d=>d.ref.delete()));
@@ -194,6 +195,17 @@ document.getElementById("clear-btn").addEventListener("click",()=>{
 document.getElementById("invite-btn").addEventListener("click",()=>{
   navigator.clipboard.writeText(location.href);
   alert("Invite link copied 💌");
+});
+
+// 🔄 CHANGE USERNAME
+document.getElementById("change-name").addEventListener("click",()=>{
+  let newName = prompt("Enter new username (2+ letters):");
+  if(newName && newName.trim().length>=2){
+    onlineRef.delete();
+    username = newName.trim();
+    localStorage.setItem("username",username);
+    db.collection("online").doc(username).set({name:username});
+  }
 });
 </script>
 </body>
