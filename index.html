@@ -2,28 +2,35 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Class Chat</title>
+<title>Clean Chat</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
 
 <style>
 :root{
   --bg:#eef3fb;
-  --sidebar:#dde7f7;
-  --card:#ffffff;
-  --me:#bcd7ff;
-  --other:#e7efff;
-  --accent:#6f9df6;
-  --text:#1f2937;
-  --muted:#6b7280;
+  --sidebar:#dbe6f7;
+  --chat:#ffffff;
+  --primary:#7da6e8;
+  --secondary:#c8d9f6;
+  --me:#7da6e8;
+  --other:#e6efff;
+  --text:#1f1f1f;
 }
 
-*{box-sizing:border-box;margin:0;padding:0;font-family:"Inter",sans-serif}
-body{height:100vh;display:flex;background:var(--bg);color:var(--text)}
+*{box-sizing:border-box;font-family:'Inter',sans-serif}
 
+body{
+  margin:0;
+  height:100vh;
+  display:flex;
+  background:var(--bg);
+}
+
+/* SIDEBAR */
 #sidebar{
-  width:240px;
+  width:220px;
   background:var(--sidebar);
   padding:12px;
   display:flex;
@@ -31,70 +38,113 @@ body{height:100vh;display:flex;background:var(--bg);color:var(--text)}
   gap:12px;
 }
 
-h2{font-size:1rem}
+.section h3{
+  margin:0 0 6px;
+  font-size:14px;
+}
 
-.room,.user{
-  padding:8px;
+.item{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:6px;
   border-radius:8px;
-  background:#cfe0fb;
   cursor:pointer;
 }
 
-.room.active{background:var(--accent);color:#fff}
+.item:hover{background:var(--secondary)}
 
-#chat-wrap{flex:1;display:flex;flex-direction:column}
+.avatar{
+  width:32px;
+  height:32px;
+  border-radius:50%;
+  background:#9bb6e8;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  color:white;
+  font-weight:600;
+  overflow:hidden;
+}
+
+.avatar img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+}
+
+#rooms,#users{display:flex;flex-direction:column;gap:4px}
+
+/* CHAT */
+#chat-container{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  background:var(--chat);
+}
 
 #chat{
   flex:1;
-  padding:12px;
+  padding:14px;
   overflow-y:auto;
   display:flex;
   flex-direction:column;
-  gap:6px;
+  gap:8px;
 }
 
-.msg{
-  max-width:70%;
-  padding:10px 14px;
+.message{
+  max-width:75%;
+  padding:10px;
   border-radius:14px;
 }
 
-.me{align-self:flex-end;background:var(--me)}
-.other{align-self:flex-start;background:var(--other)}
+.me{background:var(--me);color:white;align-self:flex-end}
+.other{background:var(--other);align-self:flex-start}
 
-.meta{font-size:.7rem;color:var(--muted);margin-bottom:2px}
+.meta{font-size:11px;opacity:.6}
 
 #typing{
-  font-size:.75rem;
-  color:var(--muted);
-  padding-left:12px;
+  font-size:12px;
+  padding:4px 14px;
+  font-style:italic;
+  opacity:.6;
 }
 
-#form{
+/* INPUT */
+#input{
   display:flex;
-  gap:6px;
+  gap:8px;
   padding:10px;
   background:var(--sidebar);
 }
 
-#message{
+#msg{
   flex:1;
   padding:10px;
-  border-radius:8px;
-  border:1px solid #c7d2fe;
+  border-radius:10px;
+  border:none;
 }
 
 button{
   padding:10px 14px;
   border:none;
-  border-radius:8px;
-  background:var(--accent);
-  color:#fff;
+  border-radius:10px;
+  background:var(--primary);
+  color:white;
   font-weight:600;
+  cursor:pointer;
 }
 
+button.small{padding:6px 10px;font-size:12px}
+
+.timeout{
+  background:linear-gradient(#9ecbff,#e6f2ff);
+  color:#1b3a6b;
+}
+
+/* MOBILE */
 @media(max-width:700px){
-  #sidebar{width:150px}
+  #sidebar{width:160px}
 }
 </style>
 </head>
@@ -102,23 +152,37 @@ button{
 <body>
 
 <div id="sidebar">
-  <h2>Rooms</h2>
-  <div id="rooms"></div>
-  <input id="roomName" placeholder="New room" />
-  <button id="addRoom">Create</button>
+  <div class="section">
+    <h3>You</h3>
+    <div class="item">
+      <div class="avatar" id="myAvatar">67</div>
+      <span id="myName"></span>
+    </div>
+    <input type="file" id="avatarUpload" accept="image/*">
+  </div>
 
-  <h2>Online</h2>
-  <div id="users"></div>
+  <div class="section">
+    <h3>Rooms</h3>
+    <div id="rooms"></div>
+    <input id="roomInput" placeholder="New room">
+    <button onclick="createRoom()">Create</button>
+  </div>
+
+  <div class="section">
+    <h3>Online</h3>
+    <div id="users"></div>
+  </div>
+
+  <button onclick="unlockAdmin()">Admin</button>
 </div>
 
-<div id="chat-wrap">
+<div id="chat-container">
   <div id="chat"></div>
   <div id="typing"></div>
-  <form id="form">
-    <input id="message" placeholder="Type a message…" />
-    <button>Send</button>
-    <button type="button" id="clear">Clear</button>
-  </form>
+  <div id="input">
+    <input id="msg" placeholder="Type a message…">
+    <button onclick="send()">Send</button>
+  </div>
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -130,94 +194,118 @@ firebase.initializeApp({
   authDomain:"live-chat-3d2c3.firebaseapp.com",
   projectId:"live-chat-3d2c3"
 });
-
 const db=firebase.firestore();
-const id=crypto.randomUUID();
 
-let username=localStorage.getItem("username");
+/* USER */
+let username=localStorage.getItem("name");
 if(!username){
-  username="User"+Math.floor(Math.random()*10000);
-  localStorage.setItem("username",username);
+  username=prompt("Choose a username");
+  localStorage.setItem("name",username);
 }
+myName.textContent=username;
+
+let avatar=localStorage.getItem("avatar");
+if(avatar) myAvatar.innerHTML=`<img src="${avatar}">`;
+
+avatarUpload.onchange=e=>{
+  const r=new FileReader();
+  r.onload=()=>{
+    avatar=r.result;
+    localStorage.setItem("avatar",avatar);
+    myAvatar.innerHTML=`<img src="${avatar}">`;
+  };
+  r.readAsDataURL(e.target.files[0]);
+};
 
 let room="General";
-let unsub=null;
+let admin=false;
 
-const chat=document.getElementById("chat");
-const typingEl=document.getElementById("typing");
+/* ROOMS */
+function renderRooms(){
+  rooms.innerHTML="";
+  ["General",...new Set(customRooms)].forEach(r=>{
+    const d=document.createElement("div");
+    d.className="item";
+    d.textContent=r;
+    d.onclick=()=>room=r;
+    rooms.appendChild(d);
+  });
+}
+let customRooms=[];
+renderRooms();
 
-function loadRoom(r){
+function createRoom(){
+  const r=roomInput.value.trim();
+  if(!r)return;
+  customRooms.push(r);
+  renderRooms();
   room=r;
-  chat.innerHTML="";
-  if(unsub)unsub();
-  unsub=db.collection("messages")
-    .where("room","==",room)
-    .orderBy("time")
-    .onSnapshot(s=>{
-      chat.innerHTML="";
-      s.forEach(d=>{
-        const m=d.data();
-        const div=document.createElement("div");
-        div.className="msg "+(m.sender===username?"me":"other");
-        div.innerHTML=`<div class="meta">${m.sender}</div>${m.text}`;
-        chat.appendChild(div);
-      });
-      chat.scrollTop=chat.scrollHeight;
-    });
+  roomInput.value="";
 }
 
-db.collection("rooms").onSnapshot(s=>{
-  const r=document.getElementById("rooms");
-  r.innerHTML="";
-  s.forEach(d=>{
-    const div=document.createElement("div");
-    div.className="room"+(d.id===room?" active":"");
-    div.textContent=d.id;
-    div.onclick=()=>loadRoom(d.id);
-    r.appendChild(div);
-  });
-});
+/* ONLINE */
+db.collection("online").doc(username).set({room});
+window.onbeforeunload=()=>db.collection("online").doc(username).delete();
 
-db.collection("rooms").doc("General").set({ok:true});
-
-document.getElementById("addRoom").onclick=()=>{
-  const n=document.getElementById("roomName").value.trim();
-  if(n)db.collection("rooms").doc(n).set({ok:true});
-};
-
-document.getElementById("form").onsubmit=e=>{
-  e.preventDefault();
-  const t=message.value.trim();
-  if(!t)return;
-  db.collection("messages").add({room,text:t,sender:username,time:Date.now()});
-  message.value="";
-};
-
-message.oninput=()=>{
-  db.collection("typing").doc(room).set({user:username});
-};
-
-db.collection("typing").doc(room).onSnapshot(d=>{
-  if(d.exists&&d.data().user!==username){
-    typingEl.textContent=d.data().user+" is typing…";
-    setTimeout(()=>typingEl.textContent="",1500);
-  }
-});
-
-document.getElementById("clear").onclick=()=>chat.innerHTML="";
-
-db.collection("online").doc(id).set({name:username});
 db.collection("online").onSnapshot(s=>{
   users.innerHTML="";
-  s.forEach(d=>{
-    const div=document.createElement("div");
-    div.className="user";
-    div.textContent=d.data().name;
-    users.appendChild(div);
+  s.forEach(doc=>{
+    const u=doc.id;
+    const d=document.createElement("div");
+    d.className="item";
+    d.textContent=u;
+    if(admin && u!==username){
+      const k=document.createElement("button");
+      k.textContent="Kick";
+      k.className="small";
+      k.onclick=()=>kick(u);
+      d.appendChild(k);
+    }
+    users.appendChild(d);
   });
 });
 
-loadRoom("General");
+/* CHAT */
+msg.oninput=()=>{
+  db.collection("typing").doc(username).set({room});
+  setTimeout(()=>db.collection("typing").doc(username).delete(),1000);
+};
+
+db.collection("typing").onSnapshot(s=>{
+  const others=[...s.docs].filter(d=>d.id!==username);
+  typing.textContent=others.length?`${others[0].id} is typing…`:"";
+});
+
+function send(){
+  if(room==="Timeout") return;
+  const t=msg.value.trim();
+  if(!t)return;
+  db.collection("messages").add({user:username,text:t,room,time:Date.now()});
+  msg.value="";
+}
+
+db.collection("messages").orderBy("time").onSnapshot(s=>{
+  chat.innerHTML="";
+  s.forEach(d=>{
+    const m=d.data();
+    if(m.room!==room)return;
+    const div=document.createElement("div");
+    div.className="message "+(m.user===username?"me":"other");
+    div.innerHTML=`<div class="meta">${m.user}</div>${m.text}`;
+    chat.appendChild(div);
+  });
+  chat.scrollTop=chat.scrollHeight;
+});
+
+/* ADMIN */
+function unlockAdmin(){
+  if(prompt("Password")==="slay") admin=true;
+}
+
+function kick(user){
+  if(user===username)return;
+  db.collection("online").doc(user).set({room:"Timeout"});
+}
 </script>
 
 </body>
