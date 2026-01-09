@@ -4,154 +4,229 @@
 <meta charset="UTF-8">
 <title>Class Chat</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+
 <style>
 :root{
-  --bg:#eef4fb;
-  --sidebar:#dbe9f8;
-  --chat:#ffffff;
-  --me:#b7d7ff;
-  --other:#e6f0ff;
-  --accent:#5c8df6;
-  --text:#1b1b1b;
+  --bg:#eef3ff;
+  --panel:#dbe6ff;
+  --card:#ffffff;
+  --me:#a8c7ff;
+  --other:#e7edff;
+  --accent:#5b7cfa;
 }
-*{box-sizing:border-box;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto;}
-body{margin:0;height:100vh;display:flex;background:var(--bg);color:var(--text);}
 
-/* SIDEBAR */
-#sidebar{width:220px;background:var(--sidebar);padding:10px;overflow:auto;}
-#sidebar h3{margin:8px 0;font-size:1rem;}
-.user{padding:6px;border-radius:6px;background:#fff;margin-bottom:4px;font-size:.9rem;display:flex;justify-content:space-between;align-items:center;}
-.user button{font-size:.7rem;padding:2px 6px;border-radius:6px;background:#ff6b6b;color:#fff;border:none;}
+*{box-sizing:border-box;font-family:Inter}
+body{margin:0;height:100vh;display:flex;background:var(--bg)}
 
-/* CHAT */
-#chatWrap{flex:1;display:flex;flex-direction:column;}
-#chat{flex:1;padding:10px;overflow:auto;display:flex;flex-direction:column;gap:6px;}
-.msg{max-width:75%;padding:8px 12px;border-radius:14px;}
-.me{align-self:flex-end;background:var(--me);}
-.other{align-self:flex-start;background:var(--other);}
-.meta{font-size:.7rem;opacity:.6;margin-bottom:2px;}
-#typing{font-size:.7rem;opacity:.6;padding-left:10px;height:16px;}
+#sidebar{
+  width:240px;
+  background:var(--panel);
+  padding:12px;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
 
-/* INPUT */
-#form{display:flex;gap:6px;padding:8px;background:var(--sidebar);}
-#message{flex:1;padding:10px;border-radius:8px;border:1px solid #ccc;}
-button{background:var(--accent);color:#fff;border:none;border-radius:8px;padding:8px 12px;font-weight:600;}
+h2{margin:4px 0}
 
-@media(max-width:600px){
-  #sidebar{width:140px;font-size:.8rem}
+button{
+  padding:8px;
+  border:none;
+  border-radius:8px;
+  background:var(--accent);
+  color:white;
+  font-weight:600;
+  cursor:pointer;
+}
+
+.user{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  background:white;
+  padding:6px;
+  border-radius:8px;
+  margin-bottom:6px;
+}
+
+.avatar{
+  width:32px;height:32px;
+  border-radius:50%;
+  background:var(--accent);
+  color:white;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-weight:700;
+}
+
+#chat-wrap{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+}
+
+#chat{
+  flex:1;
+  padding:12px;
+  overflow-y:auto;
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+
+.msg{
+  max-width:70%;
+  padding:10px;
+  border-radius:14px;
+}
+
+.me{align-self:flex-end;background:var(--me)}
+.other{align-self:flex-start;background:var(--other)}
+
+.meta{font-size:12px;opacity:.6}
+
+#typing{font-size:12px;font-style:italic;margin-left:12px}
+
+form{
+  display:flex;
+  gap:6px;
+  padding:10px;
+  background:var(--panel);
+}
+
+input{
+  flex:1;
+  padding:10px;
+  border-radius:8px;
+  border:1px solid #aaa;
 }
 </style>
 </head>
+
 <body>
 
 <div id="sidebar">
-  <h3>Online</h3>
-  <div id="online"></div>
+  <h2>Online</h2>
+  <div id="users"></div>
+  <button onclick="invite()">Invite Friend</button>
+  <button onclick="clearChat()">Clear Chat</button>
 </div>
 
-<div id="chatWrap">
+<div id="chat-wrap">
   <div id="chat"></div>
   <div id="typing"></div>
   <form id="form">
-    <input id="message" placeholder="Type a message…" autocomplete="off">
-    <button type="submit">Send</button>
-    <button type="button" id="clearBtn">Clear</button>
+    <input id="msg" placeholder="Message…" autocomplete="off">
+    <button>Send</button>
   </form>
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
 <script>
+/* 🔐 CONFIG */
+const ADMIN = "AylaAdmin";
+
 firebase.initializeApp({
   apiKey: "AIzaSyD9GQMi0v4ItnkJ2uqKtUUQU59DorLrCAg",
   authDomain: "live-chat-3d2c3.firebaseapp.com",
   projectId: "live-chat-3d2c3"
 });
-const db=firebase.firestore();
 
-/* USER */
-let uid=localStorage.getItem("uid");
-if(!uid){uid=crypto.randomUUID();localStorage.setItem("uid",uid);}
-let name=localStorage.getItem("name");
-if(!name){
-  name=prompt("Choose a username")||"User";
-  localStorage.setItem("name",name);
+const db = firebase.firestore();
+
+/* 👤 USERNAME (NO ANON) */
+let name = localStorage.getItem("name");
+while(!name || name.trim().length < 2){
+  name = prompt("Choose a username (2+ letters)");
 }
-const IS_ADMIN=name.toLowerCase()==="ayla";
+name = name.trim();
+localStorage.setItem("name",name);
 
-/* ONLINE */
-const onlineRef=db.collection("online");
-onlineRef.doc(uid).set({name});
-window.addEventListener("beforeunload",()=>onlineRef.doc(uid).delete());
+/* 🚨 KICK CHECK */
+db.collection("kicked").doc(name).onSnapshot(d=>{
+  if(d.exists) location.reload();
+});
 
-onlineRef.onSnapshot(s=>{
-  online.innerHTML="";
+/* 🟢 ONLINE */
+const userRef=db.collection("online").doc(name);
+userRef.set({name});
+window.addEventListener("beforeunload",()=>userRef.delete());
+
+db.collection("online").onSnapshot(s=>{
+  users.innerHTML="";
   s.forEach(d=>{
-    const u=d.data();
+    const u=d.data().name;
     const div=document.createElement("div");
     div.className="user";
-    div.textContent=u.name;
-    if(IS_ADMIN && u.name!==name){
-      const b=document.createElement("button");
-      b.textContent="Kick";
-      b.onclick=()=>kick(u.name,d.id);
-      div.appendChild(b);
-    }
-    online.appendChild(div);
+    div.innerHTML=`
+      <div class="avatar">${u[0].toUpperCase()}</div>
+      ${u}
+      ${name===ADMIN && u!==name ? `<button onclick="kick('${u}')">⋯</button>`:""}
+    `;
+    users.appendChild(div);
   });
 });
 
-/* CHAT */
-const chatRef=db.collection("messages");
-chatRef.orderBy("time").onSnapshot(s=>{
+/* 💬 CHAT */
+form.onsubmit=e=>{
+  e.preventDefault();
+  if(!msg.value.trim())return;
+  db.collection("messages").add({
+    user:name,
+    text:msg.value,
+    time:Date.now()
+  });
+  msg.value="";
+};
+
+db.collection("messages").orderBy("time").onSnapshot(s=>{
   chat.innerHTML="";
   s.forEach(d=>{
     const m=d.data();
     const div=document.createElement("div");
-    div.className="msg "+(m.name===name?"me":"other");
-    div.innerHTML=`<div class="meta">${m.name}</div>${m.text}`;
+    div.className=`msg ${m.user===name?"me":"other"}`;
+    div.innerHTML=`<div class="meta">${m.user}</div>${m.text}`;
     chat.appendChild(div);
   });
   chat.scrollTop=chat.scrollHeight;
 });
 
-/* SEND */
-form.onsubmit=e=>{
-  e.preventDefault();
-  if(!message.value.trim())return;
-  chatRef.add({name,text:message.value,time:Date.now()});
-  message.value="";
+/* ✍️ TYPING */
+msg.oninput=()=>{
+  db.collection("typing").doc(name).set({typing:true});
+  setTimeout(()=>db.collection("typing").doc(name).delete(),800);
 };
 
-/* TYPING */
-let typingTimer;
-message.oninput=()=>{
-  db.collection("typing").doc("now").set({name});
-  clearTimeout(typingTimer);
-  typingTimer=setTimeout(()=>db.collection("typing").doc("now").delete(),700);
-};
-db.collection("typing").doc("now").onSnapshot(d=>{
-  typing.textContent=d.exists?`${d.data().name} is typing…`:"";
+db.collection("typing").onSnapshot(s=>{
+  typing.textContent=[...s.docs].map(d=>d.id).filter(u=>u!==name).length
+    ? "Someone is typing…"
+    : "";
 });
 
-/* CLEAR (LOCAL ONLY) */
-clearBtn.onclick=()=>{
-  chat.innerHTML="";
-};
-
-/* KICK */
-function kick(n,id){
-  const p=prompt("Kick password");
-  if(p!=="slay")return;
-  onlineRef.doc(id).delete();
-  db.collection("kicked").doc(n).set({time:Date.now()});
+/* 🚪 ADMIN KICK */
+function kick(u){
+  if(name!==ADMIN)return;
+  db.collection("kicked").doc(u).set({time:Date.now()});
 }
-db.collection("kicked").doc(name).onSnapshot(d=>{
-  if(d.exists){
-    document.body.innerHTML=
-    "<div style='height:100vh;display:flex;align-items:center;justify-content:center;background:url(https://images.unsplash.com/photo-1500530855697-b586d89ba3ee) center/cover'><h1 style='color:white'>Timeout Room 🌥️</h1></div>";
-  }
-});
+
+/* 🔗 INVITE */
+function invite(){
+  navigator.clipboard.writeText(location.href);
+  alert("Invite link copied 💌");
+}
+
+/* 🧹 CLEAR */
+function clearChat(){
+  if(name!==ADMIN)return;
+  db.collection("messages").get().then(s=>{
+    s.forEach(d=>d.ref.delete());
+  });
+}
 </script>
 </body>
 </html>
