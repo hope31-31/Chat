@@ -27,9 +27,10 @@ body{margin:0;height:100vh;display:flex;background:var(--bg)}
   display:flex;
   flex-direction:column;
   gap:10px;
+  overflow-y:auto;
 }
 
-h2{margin:4px 0}
+h2{margin:4px 0;font-weight:600}
 
 button{
   padding:8px;
@@ -81,6 +82,7 @@ button{
   max-width:70%;
   padding:10px;
   border-radius:14px;
+  word-wrap:break-word;
 }
 
 .me{align-self:flex-end;background:var(--me)}
@@ -103,16 +105,28 @@ input{
   border-radius:8px;
   border:1px solid #aaa;
 }
+
+@media(max-width:768px){
+  #sidebar{width:180px}
+  .avatar{width:24px;height:24px;font-size:12px}
+}
 </style>
 </head>
 
 <body>
 
 <div id="sidebar">
+  <h2>Rooms</h2>
+  <div id="rooms">
+    <div class="room selected" data-room="General">General</div>
+  </div>
+  <input id="new-room-name" placeholder="New room name" style="padding:6px;border-radius:6px;border:1px solid #aaa;margin-bottom:6px;">
+  <button id="create-room">Create Room</button>
+
   <h2>Online</h2>
   <div id="users"></div>
-  <button onclick="invite()">Invite Friend</button>
-  <button onclick="clearChat()">Clear Chat</button>
+  <button id="invite">Invite Friend</button>
+  <button id="clear">Clear Chat</button>
 </div>
 
 <div id="chat-wrap">
@@ -128,105 +142,124 @@ input{
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
 <script>
-/* 🔐 CONFIG */
 const ADMIN = "AylaAdmin";
 
+// --- FIREBASE ---
 firebase.initializeApp({
   apiKey: "AIzaSyD9GQMi0v4ItnkJ2uqKtUUQU59DorLrCAg",
   authDomain: "live-chat-3d2c3.firebaseapp.com",
   projectId: "live-chat-3d2c3"
 });
-
 const db = firebase.firestore();
 
-/* 👤 USERNAME (NO ANON) */
+// --- USER ---
 let name = localStorage.getItem("name");
-while(!name || name.trim().length < 2){
-  name = prompt("Choose a username (2+ letters)");
-}
-name = name.trim();
+while(!name || name.trim().length<2){ name=prompt("Choose a username (2+ letters)"); }
+name=name.trim();
 localStorage.setItem("name",name);
 
-/* 🚨 KICK CHECK */
-db.collection("kicked").doc(name).onSnapshot(d=>{
-  if(d.exists) location.reload();
-});
-
-/* 🟢 ONLINE */
+// --- ONLINE ---
 const userRef=db.collection("online").doc(name);
 userRef.set({name});
 window.addEventListener("beforeunload",()=>userRef.delete());
 
+// --- ROOMS ---
+let currentRoom="General";
+const roomsEl=document.getElementById("rooms");
+function joinRoom(room){
+  currentRoom=room;
+  document.querySelectorAll(".room").forEach(r=>r.classList.remove("selected"));
+  document.querySelector(`[data-room="${room}"]`).classList.add("selected");
+  listenMessages(room);
+}
+function listenMessages(room){
+  chat.innerHTML="";
+  db.collection("messages").where("room","==",room).orderBy("time")
+    .onSnapshot(snapshot=>{
+      chat.innerHTML="";
+      snapshot.forEach(doc=>{
+        const m=doc.data();
+        const div=document.createElement("div");
+        div.className=`msg ${m.user===name?"me":"other"}`;
+        div.innerHTML=`<div class="meta">${m.user}</div>${m.text}`;
+        chat.appendChild(div);
+      });
+      chat.scrollTop=chat.scrollHeight;
+    });
+}
+createRoom.addEventListener("click",()=>{
+  const r=newRoomName.value.trim();
+  if(!r) return;
+  const div=document.createElement("div"); div.className="room"; div.dataset.room=r; div.textContent=r;
+  div.addEventListener("click",()=>joinRoom(r));
+  roomsEl.appendChild(div);
+  newRoomName.value="";
+});
+joinRoom(currentRoom);
+
+// --- SEND ---
+form.onsubmit=e=>{
+  e.preventDefault();
+  if(!msg.value.trim())return;
+  db.collection("messages").add({
+    text:msg.value,
+    user:name,
+    room:currentRoom,
+    time:Date.now()
+  });
+  msg.value="";
+};
+
+// --- TYPING ---
+msg.oninput=()=>{
+  db.collection("typing").doc(name).set({typing:true});
+  setTimeout(()=>db.collection("typing").doc(name).delete(),800);
+};
+db.collection("typing").onSnapshot(s=>{
+  typing.textContent=[...s.docs].map(d=>d.id).filter(u=>u!==name).length?"Someone is typing…":"";
+});
+
+// --- ONLINE USERS ---
 db.collection("online").onSnapshot(s=>{
   users.innerHTML="";
   s.forEach(d=>{
     const u=d.data().name;
     const div=document.createElement("div");
     div.className="user";
-    div.innerHTML=`
-      <div class="avatar">${u[0].toUpperCase()}</div>
-      ${u}
-      ${name===ADMIN && u!==name ? `<button onclick="kick('${u}')">⋯</button>`:""}
-    `;
+    div.innerHTML=`<div class="avatar">${u[0].toUpperCase()}</div>${u}`;
+    if(name===ADMIN && u!==name){
+      const btn=document.createElement("button");
+      btn.textContent="⋯";
+      btn.onclick=()=>kick(u);
+      div.appendChild(btn);
+    }
     users.appendChild(div);
   });
 });
 
-/* 💬 CHAT */
-form.onsubmit=e=>{
-  e.preventDefault();
-  if(!msg.value.trim())return;
-  db.collection("messages").add({
-    user:name,
-    text:msg.value,
-    time:Date.now()
-  });
-  msg.value="";
-};
-
-db.collection("messages").orderBy("time").onSnapshot(s=>{
-  chat.innerHTML="";
-  s.forEach(d=>{
-    const m=d.data();
-    const div=document.createElement("div");
-    div.className=`msg ${m.user===name?"me":"other"}`;
-    div.innerHTML=`<div class="meta">${m.user}</div>${m.text}`;
-    chat.appendChild(div);
-  });
-  chat.scrollTop=chat.scrollHeight;
-});
-
-/* ✍️ TYPING */
-msg.oninput=()=>{
-  db.collection("typing").doc(name).set({typing:true});
-  setTimeout(()=>db.collection("typing").doc(name).delete(),800);
-};
-
-db.collection("typing").onSnapshot(s=>{
-  typing.textContent=[...s.docs].map(d=>d.id).filter(u=>u!==name).length
-    ? "Someone is typing…"
-    : "";
-});
-
-/* 🚪 ADMIN KICK */
+// --- KICK ---
 function kick(u){
   if(name!==ADMIN)return;
   db.collection("kicked").doc(u).set({time:Date.now()});
 }
 
-/* 🔗 INVITE */
-function invite(){
+// --- CHECK KICK ---
+db.collection("kicked").doc(name).onSnapshot(d=>{
+  if(d.exists) window.location.href="timeout.html"; // make a timeout.html page with your pretty picture
+});
+
+// --- INVITE ---
+invite.addEventListener("click",()=>{
   navigator.clipboard.writeText(location.href);
   alert("Invite link copied 💌");
-}
+});
 
-/* 🧹 CLEAR */
-function clearChat(){
-  if(name!==ADMIN)return;
+// --- CLEAR CHAT FOR EVERYONE ---
+clear.addEventListener("click",()=>{
   db.collection("messages").get().then(s=>{
     s.forEach(d=>d.ref.delete());
   });
-}
+});
 </script>
 </body>
 </html>
