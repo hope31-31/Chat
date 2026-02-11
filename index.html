@@ -3,335 +3,57 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Student Notes Portal</title>
-
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
-
+<title>Join Chat</title>
 <style>
 body {
   margin:0;
   font-family: Arial, sans-serif;
-  height:100vh;
-  background: linear-gradient(135deg,#eef2f7,#cfd9df);
-  overflow:hidden;
-}
-
-/* ---------------- LOGIN ---------------- */
-#login {
-  position:absolute;
-  width:100%;
-  height:100%;
   display:flex;
   justify-content:center;
   align-items:center;
-  background:rgba(0,0,0,0.3);
-  z-index:20;
+  height:100vh;
+  background: linear-gradient(135deg,#eef2f7,#cfd9df);
 }
-
-.login-box {
+.container {
   background:white;
   padding:30px;
   border-radius:16px;
-  width:90%;
-  max-width:350px;
   text-align:center;
-  box-shadow:0 10px 30px rgba(0,0,0,0.2);
+  box-shadow:0 10px 20px rgba(0,0,0,0.2);
 }
-
-.login-box input {
-  width:90%;
+input {
+  width:80%;
   padding:10px;
   margin:10px 0;
-  border-radius:12px;
-  border:1px solid #ccc;
-}
-
-.login-box button {
-  padding:10px 20px;
-  border:none;
-  border-radius:12px;
-  background:#007bff;
-  color:white;
-  font-weight:bold;
-}
-
-/* ---------------- APP LAYOUT ---------------- */
-#app {
-  display:none;
-  height:100%;
-  display:flex;
-}
-
-#sidebar {
-  width:240px;
-  background:white;
-  display:flex;
-  flex-direction:column;
-  border-right:1px solid #ddd;
-}
-
-#sidebar h3 {
-  margin:0;
-  padding:10px;
-  background:#007bff;
-  color:white;
-  text-align:center;
-}
-
-#rooms, #users {
-  flex:1;
-  overflow-y:auto;
-  padding:10px;
-}
-
-.room, .user {
-  padding:8px;
   border-radius:10px;
-  margin:4px 0;
-  cursor:pointer;
-}
-
-.room.selected {
-  background:#007bff;
-  color:white;
-  font-weight:bold;
-}
-
-.avatar {
-  width:30px;
-  height:30px;
-  border-radius:50%;
-  background:#007bff;
-  color:white;
-  text-align:center;
-  line-height:30px;
-  font-weight:bold;
-  display:inline-block;
-  margin-right:6px;
-}
-
-/* ---------------- CHAT ---------------- */
-#main {
-  flex:1;
-  display:flex;
-  flex-direction:column;
-}
-
-#chat {
-  flex:1;
-  padding:15px;
-  overflow-y:auto;
-  display:flex;
-  flex-direction:column;
-}
-
-.msg {
-  max-width:70%;
-  padding:10px 15px;
-  border-radius:20px;
-  margin:5px 0;
-  word-wrap:break-word;
-}
-
-.me {
-  align-self:flex-end;
-  background:#007bff;
-  color:white;
-  border-bottom-right-radius:0;
-}
-
-.other {
-  align-self:flex-start;
-  background:#e4e6eb;
-  border-bottom-left-radius:0;
-}
-
-.msg img {
-  max-width:100%;
-  border-radius:12px;
-  margin-top:5px;
-}
-
-.reactions {
-  display:flex;
-  margin-top:5px;
-}
-
-.reaction {
-  background:#eee;
-  padding:3px 6px;
-  border-radius:12px;
-  margin-right:5px;
-  cursor:pointer;
-  font-size:14px;
-}
-
-#typing {
-  padding:5px 15px;
-  font-style:italic;
-  color:#666;
-}
-
-#form {
-  display:flex;
-  padding:10px;
-  background:white;
-  border-top:1px solid #ddd;
-}
-
-#msg {
-  flex:1;
-  padding:10px;
-  border-radius:20px;
   border:1px solid #ccc;
 }
-
-#form button {
-  margin-left:10px;
-  border:none;
-  border-radius:20px;
+button {
   padding:10px 20px;
+  border:none;
+  border-radius:12px;
   background:#007bff;
   color:white;
-}
-
-/* ---------------- STEALTH MODE ---------------- */
-#stealth {
-  position:absolute;
-  width:100%;
-  height:100%;
-  background:black;
-  color:white;
-  display:none;
-  z-index:50;
-  padding:40px;
-}
-
-#stealth h1 {
-  font-size:28px;
-  margin-bottom:20px;
-}
-
-.hidden-toggle {
-  position:absolute;
-  top:5px;
-  left:5px;
-  width:20px;
-  height:20px;
+  font-weight:bold;
   cursor:pointer;
-}
-
-/* Responsive */
-@media(max-width:768px){
-  #app {flex-direction:column;}
-  #sidebar {width:100%;flex-direction:row;}
 }
 </style>
 </head>
-
 <body>
-
-<!-- STEALTH SCREEN -->
-<div id="stealth">
-  <h1>Student Notes Dashboard</h1>
-  <p>Reviewing academic materials...</p>
-</div>
-
-<div class="hidden-toggle" onclick="toggleStealth()"></div>
-
-<!-- LOGIN -->
-<div id="login">
-  <div class="login-box">
-    <h2>Login</h2>
-    <input id="username" placeholder="Username">
-    <button onclick="login()">Enter</button>
-  </div>
-</div>
-
-<!-- APP -->
-<div id="app">
-  <div id="sidebar">
-    <h3>Rooms</h3>
-    <div id="rooms"></div>
-    <h3>Online</h3>
-    <div id="users"></div>
-  </div>
-
-  <div id="main">
-    <div id="chat"></div>
-    <div id="typing"></div>
-    <form id="form">
-      <input id="msg" placeholder="Message...">
-      <input type="file" id="img">
-      <button>Send</button>
-    </form>
-  </div>
+<div class="container">
+  <h2>Enter Username</h2>
+  <input type="text" id="username" placeholder="Pick a username">
+  <br>
+  <button onclick="joinChat()">Join Chat</button>
 </div>
 
 <script>
-// Firebase config
-firebase.initializeApp({
-  apiKey:"YOUR_API_KEY",
-  authDomain:"YOUR_AUTH_DOMAIN",
-  projectId:"YOUR_PROJECT_ID",
-  storageBucket:"YOUR_STORAGE_BUCKET"
-});
-
-const db=firebase.firestore();
-const storage=firebase.storage();
-const serverTime=firebase.firestore.FieldValue.serverTimestamp;
-
-let user,currentRoom="General",onlineRef;
-
-// LOGIN
-async function login(){
-  const name=document.getElementById("username").value.trim();
-  if(name.length<2) return;
-  user=name;
-  onlineRef=db.collection("online").doc(user);
-  await onlineRef.set({name:user});
-  document.getElementById("login").style.display="none";
-  document.getElementById("app").style.display="flex";
-  listenMessages();
+function joinChat(){
+  const username = document.getElementById("username").value.trim();
+  if(username.length < 2) return alert("Enter 2+ letters");
+  localStorage.setItem("username", username);
+  window.location.href = "chat.html";
 }
-
-// SEND
-document.getElementById("form").onsubmit=e=>{
-  e.preventDefault();
-  const text=document.getElementById("msg").value.trim();
-  if(!text)return;
-  db.collection("messages").add({user,text,time:serverTime});
-  document.getElementById("msg").value="";
-};
-
-// LISTEN
-function listenMessages(){
-  db.collection("messages").orderBy("time").onSnapshot(snap=>{
-    const chat=document.getElementById("chat");
-    chat.innerHTML="";
-    snap.forEach(d=>{
-      const m=d.data();
-      const div=document.createElement("div");
-      div.className="msg "+(m.user===user?"me":"other");
-      div.textContent=m.text;
-      chat.appendChild(div);
-    });
-    chat.scrollTop=chat.scrollHeight;
-  });
-}
-
-// STEALTH TOGGLE
-function toggleStealth(){
-  const s=document.getElementById("stealth");
-  s.style.display=s.style.display==="none"?"block":"none";
-}
-
-document.addEventListener("keydown",e=>{
-  if(e.altKey && e.key==="b") toggleStealth();
-});
 </script>
-
 </body>
 </html>
