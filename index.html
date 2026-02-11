@@ -182,7 +182,8 @@ function loadRooms(){
       div.className="room "+(r.name===currentRoom?"selected":"");
       div.textContent=r.name;
       div.onclick=()=>joinRoom(r.name,r.password);
-      attachLongPress(div, r.name); // Add long-press delete
+      // Only attach long-press if room is not General
+      if(r.name !== "General") attachLongPress(div,r.name);
       roomsDiv.appendChild(div);
     });
   });
@@ -270,6 +271,7 @@ function attachLongPress(div, roomName){
         // Delete messages in room
         const snap = await db.collection("messages").where("room","==",roomName).get();
         snap.forEach(m=>m.ref.delete());
+        if(currentRoom===roomName) joinRoom("General","");
       }
     }, 1500); // 1.5 seconds long press
   }
