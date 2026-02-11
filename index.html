@@ -32,6 +32,11 @@ header {
   padding:10px;
   border-radius:15px;
 }
+.sender {
+  font-size:12px;
+  opacity:0.7;
+  margin-bottom:2px;
+}
 .mine {
   background:#4f46e5;
   align-self:flex-end;
@@ -100,6 +105,14 @@ const auth = getAuth();
 await signInAnonymously(auth);
 console.log("Signed in anonymously!");
 
+// Prompt for a name
+let username = localStorage.getItem("chatUsername");
+while(!username || username.trim().length < 1){
+  username = prompt("Enter your name:");
+}
+username = username.trim();
+localStorage.setItem("chatUsername", username);
+
 // Elements
 const chatDiv = document.getElementById("chat");
 const messageInput = document.getElementById("messageInput");
@@ -115,6 +128,7 @@ async function sendMessage(){
   try {
     await addDoc(messagesRef,{
       text,
+      sender: username,
       createdAt:serverTimestamp()
     });
     messageInput.value="";
@@ -137,8 +151,8 @@ onSnapshot(q, snapshot=>{
   snapshot.forEach(docSnap=>{
     const data = docSnap.data();
     const div = document.createElement("div");
-    div.className = "message mine"; // all messages appear same, no usernames
-    div.textContent = data.text;
+    div.className = "message "+(data.sender===username?"mine":"other");
+    div.innerHTML = `<div class="sender">${data.sender}</div>${data.text}`;
     chatDiv.appendChild(div);
   });
   chatDiv.scrollTop = chatDiv.scrollHeight;
