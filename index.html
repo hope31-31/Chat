@@ -3,11 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Chat with Rooms</title>
+<title>Educational Chat</title>
+<!-- Google Font: Poppins -->
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 body {
   margin:0;
-  font-family: Arial, sans-serif;
+  font-family: 'Poppins', Arial, sans-serif;
   background: linear-gradient(135deg,#1e1e2f,#2c2c54);
   color:white;
   display:flex;
@@ -18,7 +20,7 @@ header {
   padding:15px;
   text-align:center;
   font-size:18px;
-  font-weight:bold;
+  font-weight:600;
   background:rgba(0,0,0,0.3);
 }
 #rooms {
@@ -34,6 +36,7 @@ header {
   border-radius:12px;
   cursor:pointer;
   white-space:nowrap;
+  font-weight:500;
 }
 .room.selected {
   background:#4f46e5;
@@ -48,6 +51,7 @@ header {
   margin:5px;
   padding:10px;
   border-radius:15px;
+  word-wrap: break-word;
 }
 .sender {
   font-size:12px;
@@ -83,6 +87,7 @@ button {
   background:#6366f1;
   color:white;
   cursor:pointer;
+  font-weight:500;
 }
 #createRoomArea {
   display:flex;
@@ -100,7 +105,7 @@ button {
 </head>
 <body>
 
-<header>Chat with Rooms</header>
+<header>Educational Chat</header>
 
 <div id="rooms"></div>
 
@@ -139,15 +144,9 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth();
 await signInAnonymously(auth);
-console.log("Signed in anonymously!");
 
-// Prompt for name
-let username = localStorage.getItem("chatUsername");
-while(!username || username.trim().length<1){
-  username = prompt("Enter your name:");
-}
-username = username.trim();
-localStorage.setItem("chatUsername", username);
+// Fixed username
+const username = "Educational Website";
 
 // Elements
 const chatDiv = document.getElementById("chat");
