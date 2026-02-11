@@ -49,6 +49,7 @@ button { padding:10px 15px; border:none; border-radius:12px; background:#6366f1;
   <button id="clearBtn">Clear Chat</button>
 </div>
 
+<!-- Firebase CDN scripts -->
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
@@ -70,10 +71,9 @@ firebase.auth().signInAnonymously();
 
 let username = "";
 let currentRoom = "General";
-let roomCreators = {};
 let unsubscribeMessages = null;
 
-// --- DOM elements ---
+// DOM elements
 const chatDiv = document.getElementById("chat");
 const roomsDiv = document.getElementById("rooms");
 const messageInput = document.getElementById("messageInput");
@@ -92,7 +92,6 @@ setUsernameBtn.onclick = ()=>{
   if(!name) return alert("Enter your name!");
   username = name;
 
-  // show chat UI
   document.getElementById("usernameArea").style.display = "none";
   roomsDiv.style.display = "flex";
   chatDiv.style.display = "flex";
@@ -115,7 +114,6 @@ function loadRooms(){
     roomsDiv.innerHTML="";
     snap.forEach(d=>{
       const r = d.data();
-      roomCreators[r.name] = r.creator;
       const div = document.createElement("div");
       div.className = "room " + (r.name===currentRoom?"selected":"");
       div.textContent = r.name;
@@ -190,11 +188,11 @@ createRoomBtn.onclick = async ()=>{
   joinRoom(name,pass);
 };
 
-// --- Delete room ---
+// --- Delete room (anyone can delete) ---
 deleteRoomBtn.onclick = async ()=>{
   if(currentRoom==="General") return alert("Cannot delete General");
-  if(roomCreators[currentRoom]!==username) return alert("Only the creator can delete this room");
   if(!confirm(`Delete room "${currentRoom}" and all its messages?`)) return;
+
   await db.collection("rooms").doc(currentRoom).delete();
   const snap = await db.collection("messages").where("room","==",currentRoom).get();
   snap.forEach(d=>d.ref.delete());
