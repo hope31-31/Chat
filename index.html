@@ -1,9 +1,7 @@
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc, getDocs, query, where, setDoc } 
-from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-import { getAuth, signInAnonymously } 
-from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { getFirestore, collection, addDoc, onSnapshot, doc, setDoc, getDocs, deleteDoc, query, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
 console.log("Chat app starting...");
 
@@ -19,124 +17,106 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
-const auth = getAuth(app);
+const auth = getAuth();
 
 let username = "";
 let currentRoom = "General";
-let unsubscribe = null;
-let createdRooms = [];
+let unsubscribeMessages = null;
+let createdRoomsThisSession = [];
 
 // DOM
-const chat = document.getElementById("chat");
+const chatDiv = document.getElementById("chat");
 const roomsDiv = document.getElementById("rooms");
-const input = document.getElementById("messageInput");
+const messageInput = document.getElementById("messageInput");
 const sendBtn = document.getElementById("sendBtn");
 const clearBtn = document.getElementById("clearBtn");
 const createRoomBtn = document.getElementById("createRoomBtn");
 const newRoomName = document.getElementById("newRoomName");
 
-// AUTH FIRST
+// Auth first
 signInAnonymously(auth).then(userCred => {
   username = userCred.user.uid;
   console.log("Signed in:", username);
-  startApp();
-}).catch(err => {
-  console.error("Auth error:", err);
-});
+  initApp();
+}).catch(err => console.error("Auth failed:", err));
 
-function startApp() {
-  ensureGeneral();
+// -----------------------
+function initApp() {
+  ensureGeneralRoom();
   loadRooms();
   joinRoom("General");
 }
 
-async function ensureGeneral() {
-  await setDoc(doc(db,"rooms","General"), {
-    name:"General"
-  }, { merge:true });
+// Ensure General exists
+async function ensureGeneralRoom() {
+  await setDoc(doc(db,"rooms","General"), { name:"General" }, { merge:true });
 }
 
+// Load rooms
 function loadRooms() {
   onSnapshot(collection(db,"rooms"), snap=>{
     roomsDiv.innerHTML="";
     snap.forEach(d=>{
-      const room = d.data().name;
+      const r = d.data();
       const div = document.createElement("div");
-      div.className="room";
-      if(room===currentRoom) div.classList.add("selected");
-      div.textContent = room;
-      div.onclick = ()=> joinRoom(room);
+      div.className = "room";
+      if(r.name===currentRoom) div.classList.add("selected");
+      div.textContent = r.name;
+      div.onclick = ()=> joinRoom(r.name);
       roomsDiv.appendChild(div);
     });
   });
 }
 
+// Join room
 function joinRoom(name) {
   currentRoom = name;
+  if(unsubscribeMessages) unsubscribeMessages();
 
-  if(unsubscribe) unsubscribe();
-
-  unsubscribe = onSnapshot(
-    query(collection(db,"messages"), where("room","==",currentRoom)),
-    snap=>{
-      chat.innerHTML="";
-      snap.forEach(docSnap=>{
-        const m = docSnap.data();
-        const div = document.createElement("div");
-        div.className="message " + (m.sender===username?"mine":"other");
-        div.innerHTML = `<div class="sender">${m.sender}</div>${m.text}`;
-        chat.appendChild(div);
-      });
-      chat.scrollTop = chat.scrollHeight;
-    }
-  );
+  const q = query(collection(db,"messages"), where("room","==",currentRoom));
+  unsubscribeMessages = onSnapshot(q, snap=>{
+    chatDiv.innerHTML = "";
+    snap.forEach(docSnap=>{
+      const m = docSnap.data();
+      const div = document.createElement("div");
+      div.className = "message "+(m.sender===username?"mine":"other");
+      div.innerHTML = `<div class="sender">${m.sender}</div>${m.text}`;
+      chatDiv.appendChild(div);
+    });
+    chatDiv.scrollTop = chatDiv.scrollHeight;
+  });
 }
 
-// SEND MESSAGE
+// Send message
 sendBtn.onclick = async ()=>{
-  const text = input.value.trim();
+  const text = messageInput.value.trim();
   if(!text) return;
-
-  await addDoc(collection(db,"messages"),{
-    text:text,
-    sender:username,
-    room:currentRoom
-  });
-
-  input.value="";
+  await addDoc(collection(db,"messages"), { text, sender:username, room:currentRoom });
+  messageInput.value="";
 };
 
-// CLEAR CHAT FOREVER
+// Clear chat permanently
 clearBtn.onclick = async ()=>{
-  const snap = await getDocs(
-    query(collection(db,"messages"), where("room","==",currentRoom))
-  );
-
-  for(const d of snap.docs){
-    await deleteDoc(d.ref);
-  }
+  if(!confirm("Clear chat forever?")) return;
+  const snap = await getDocs(query(collection(db,"messages"), where("room","==",currentRoom)));
+  for(const d of snap.docs) await deleteDoc(d.ref);
 };
 
-// CREATE ROOM
+// Create room
 createRoomBtn.onclick = async ()=>{
   const name = newRoomName.value.trim();
   if(!name) return;
-
-  await setDoc(doc(db,"rooms",name),{name:name});
-  createdRooms.push(name);
-  newRoomName.value="";
+  await setDoc(doc(db,"rooms",name), { name });
+  createdRoomsThisSession.push(name);
+  newRoomName.value = "";
   joinRoom(name);
 };
 
-// DELETE CREATED ROOMS WHEN TAB CLOSES
+// Auto-delete created rooms on tab close
 window.addEventListener("beforeunload", async ()=>{
-  for(const room of createdRooms){
-    const snap = await getDocs(
-      query(collection(db,"messages"), where("room","==",room))
-    );
-    for(const d of snap.docs){
-      await deleteDoc(d.ref);
-    }
+  for(const room of createdRoomsThisSession){
+    const snap = await getDocs(query(collection(db,"messages"), where("room","==",room)));
+    for(const d of snap.docs) await deleteDoc(d.ref);
     await deleteDoc(doc(db,"rooms",room));
   }
 });
