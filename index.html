@@ -75,11 +75,12 @@ button {
 </div>
 
 <script type="module">
+// 🔑 Firebase imports
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getFirestore, collection, addDoc, serverTimestamp, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-// Firebase config – replace with your own
+// 🔧 Firebase config – replace with your own
 const firebaseConfig = {
   apiKey: "PASTE_YOURS",
   authDomain: "PASTE_YOURS",
@@ -91,14 +92,19 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
-const auth = getAuth(app);
 
+// ✅ Step 2: Anonymous Auth
+const auth = getAuth();
 await signInAnonymously(auth);
 
+// Elements
 const chatDiv = document.getElementById("chat");
 const messageInput = document.getElementById("messageInput");
+
+// Firestore collection
 const messagesRef = collection(db,"messages");
 
+// Send message
 async function sendMessage(){
   const text = messageInput.value.trim();
   if(!text) return;
@@ -109,19 +115,21 @@ async function sendMessage(){
   messageInput.value="";
 }
 
+// Real-time updates
 const q = query(messagesRef, orderBy("createdAt"));
 onSnapshot(q, snapshot=>{
   chatDiv.innerHTML="";
   snapshot.forEach(docSnap=>{
     const data = docSnap.data();
     const div = document.createElement("div");
-    div.className = "message mine";
+    div.className = "message mine"; // all messages appear the same since no usernames
     div.textContent = data.text;
     chatDiv.appendChild(div);
   });
   chatDiv.scrollTop = chatDiv.scrollHeight;
 });
 
+// Send on Enter
 messageInput.addEventListener("keypress", e=>{
   if(e.key==="Enter") sendMessage();
 });
